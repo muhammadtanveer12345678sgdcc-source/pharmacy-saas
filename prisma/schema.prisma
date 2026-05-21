@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Store (ہر میڈیکل سٹور کا اپنا الگ اکاؤنٹ ہوگا)
+model Store {
+  id                 String     @id @default(uuid())
+  name               String
+  ownerName          String
+  email              String     @unique // نیا فیلڈ: لاگ ان کے لیے
+  password           String             // نیا فیلڈ: انکرپٹڈ پاسورڈ کے لیے
+  phone              String
+  subscriptionStatus String     @default("ACTIVE") // PENDING, ACTIVE, EXPIRED
+  createdAt          DateTime   @default(now())
+  // ... پرانا کوڈ ویسے ہی رہے گا
+  paymentScreenshot  String?   // پیمنٹ اسکرین شاٹ کا لنک
+  paymentStatus      String    @default("PENDING") // PENDING, PAID, REJECTED
+  subscriptionExpiry DateTime?  // 🚨 نیا اضافہ: 30 دن کی لمٹ کے
+  // Relations 
+  medicines          Medicine[]
+  sales              Sale[]
+}
+
+// 2. Medicine (دوائیوں کی انوینٹری اور ایکسپائری)
+model Medicine {
+  id          String   @id @default(uuid())
+  storeId     String
+  name        String
+  formula     String?
+  stock       Int      @default(0)
+  costPrice   Float
+  salePrice   Float
+  expiryDate  DateTime
+  createdAt   DateTime @default(now())
+
+  // Relation
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
+
+// 3. Sale (پرمی / بلنگ کا ریکارڈ)
+model Sale {
+  id          String   @id @default(uuid())
+  storeId     String
+  totalAmount Float
+  date        DateTime @default(now())
+
+  // Relation
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
